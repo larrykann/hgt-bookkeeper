@@ -1,0 +1,61 @@
+# Virtual environment
+venv/
+env/
+ENV/
+.venv
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Sensitive configuration
+config.toml
+
+# Raw data files (your Stripe exports)
+raw/*.csv
+raw/*.xlsx
+raw/*.xls
+
+# Processed outputs (your generated GnuCash files)
+processed/*.csv
+
+# Keep the .gitkeep files
+!raw/.gitkeep
+!processed/.gitkeep
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+
+# MkDocs
+site/

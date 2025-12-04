@@ -1,0 +1,57 @@
+# HGT Bookkeeper Configuration Template
+# Copy this file to config.toml and edit with your actual GnuCash account names
+
+[accounts]
+# Revenue account - where subscription income is recorded
+income = "Income:Business:Substack Revenue"
+
+# Asset accounts
+checking = "Assets:Current Assets:Checking Account"
+stripe_balance = "Assets:Current Assets:Stripe Balance"
+
+# Expense accounts for payment processing fees
+payment_fees = "Expenses:Business:Payment Processing Fees"
+stripe_billing = "Expenses:Business:Stripe Billing Fees"
+
+[accounts.withholding]
+# Sub-accounts under checking for tax withholding reserves
+# These track cash set aside for taxes (phantom accounts under checking)
+fica_employee = "Assets:Current Assets:Checking Account:Withheld:FICA Employee"
+fica_employer = "Assets:Current Assets:Checking Account:Withheld:FICA Employer"
+federal = "Assets:Current Assets:Checking Account:Withheld:Federal"
+state = "Assets:Current Assets:Checking Account:Withheld:State"
+available = "Assets:Current Assets:Checking Account:Available for Draw"
+
+[accounts.tax_liability]
+# Liability accounts for accrued taxes (taxes owed but not yet paid)
+fica_employee = "Liabilities:Taxes Payable:FICA Employee"
+fica_employer = "Liabilities:Taxes Payable:FICA Employer"
+federal = "Liabilities:Taxes Payable:Federal Income Tax"
+state = "Liabilities:Taxes Payable:State Income Tax"
+
+[accounts.tax_expense]
+# Expense accounts for tax accrual (recorded when revenue earned)
+fica_employee = "Expenses:Taxes:FICA Employee Share"
+fica_employer = "Expenses:Taxes:FICA Employer Share"
+federal = "Expenses:Taxes:Federal Income Tax"
+state = "Expenses:Taxes:State Income Tax"
+
+[tax_rates]
+# Tax withholding rates - adjust based on your tax situation
+# FICA is split into employee and employer portions (7.65% each = 15.3% total SE tax)
+fica_employee = 0.0765    # 7.65% (Social Security 6.2% + Medicare 1.45%)
+fica_employer = 0.0765    # 7.65% (employer match)
+
+# Income tax rates - adjust to your federal and state brackets
+federal_income = 0.15     # 15% federal income tax bracket
+state_income = 0.0575     # Georgia state income tax (adjust for your state)
+
+[options]
+# Automatically create tax withholding transactions
+auto_withhold = true
+
+# Split FICA into employee/employer portions (recommended for S-corp readiness)
+split_fica = true
+
+# Round all monetary amounts to 2 decimal places
+round_to_cents = true
