@@ -1,8 +1,17 @@
 # HGT Bookkeeper Configuration Template
 # Copy this file to config.toml and edit with your actual GnuCash account names
+#
+# Accounting Flow:
+# 1. On charge: Record revenue (gross), fees (expense), net to Stripe Balance
+# 2. On charge: Accrue tax liability (expense + liability accounts)
+# 3. On stripe_fee: Reduce Stripe Balance, record billing expense
+# 4. On payout: Move from Stripe Balance to Checking sub-accounts
+#    - Withholding sub-accounts get tax amounts (mirrors liabilities)
+#    - Available for Draw gets the remainder
+# 5. Liabilities remain until you manually pay quarterly taxes
 
 [accounts]
-# Revenue account - where subscription income is recorded
+# Revenue account - where subscription income is recorded (gross amount)
 income = "Income:Business:Substack Revenue"
 
 # Asset accounts
@@ -15,7 +24,8 @@ stripe_billing = "Expenses:Business:Stripe Billing Fees"
 
 [accounts.withholding]
 # Sub-accounts under checking for tax withholding reserves
-# These track cash set aside for taxes (phantom accounts under checking)
+# These are "phantom" accounts - they roll up to the parent checking account
+# but track cash earmarked for taxes. Should mirror liability accounts.
 fica_employee = "Assets:Current Assets:Checking Account:Withheld:FICA Employee"
 fica_employer = "Assets:Current Assets:Checking Account:Withheld:FICA Employer"
 federal = "Assets:Current Assets:Checking Account:Withheld:Federal"
@@ -23,14 +33,17 @@ state = "Assets:Current Assets:Checking Account:Withheld:State"
 available = "Assets:Current Assets:Checking Account:Available for Draw"
 
 [accounts.tax_liability]
-# Liability accounts for accrued taxes (taxes owed but not yet paid)
+# Liability accounts for accrued taxes
+# These represent taxes owed but not yet paid to IRS/state
+# Zeroed when you make quarterly tax payments (manual transaction)
 fica_employee = "Liabilities:Taxes Payable:FICA Employee"
 fica_employer = "Liabilities:Taxes Payable:FICA Employer"
 federal = "Liabilities:Taxes Payable:Federal Income Tax"
 state = "Liabilities:Taxes Payable:State Income Tax"
 
 [accounts.tax_expense]
-# Expense accounts for tax accrual (recorded when revenue earned)
+# Expense accounts for tax accrual
+# These record the tax expense when revenue is earned (accrual basis)
 fica_employee = "Expenses:Taxes:FICA Employee Share"
 fica_employer = "Expenses:Taxes:FICA Employer Share"
 federal = "Expenses:Taxes:Federal Income Tax"
@@ -38,20 +51,35 @@ state = "Expenses:Taxes:State Income Tax"
 
 [tax_rates]
 # Tax withholding rates - adjust based on your tax situation
-# FICA is split into employee and employer portions (7.65% each = 15.3% total SE tax)
-fica_employee = 0.0765    # 7.65% (Social Security 6.2% + Medicare 1.45%)
-fica_employer = 0.0765    # 7.65% (employer match)
+#
+# FICA (Self-Employment Tax):
+# - Calculated on GROSS revenue (before fees)
+# - Split into employee (7.65%) and employer (7.65%) = 15.3% total
+# - Splitting now makes S-corp transition seamless later
+fica_employee = 0.0765
+fica_employer = 0.0765
 
-# Income tax rates - adjust to your federal and state brackets
-federal_income = 0.15     # 15% federal income tax bracket
-state_income = 0.0575     # Georgia state income tax (adjust for your state)
+# Income Tax:
+# - Calculated on NET revenue (after payment processing fees)
+# - Adjust rates to match your tax bracket
+federal_income = 0.15
+state_income = 0.0575
+
+[tax_calculation]
+# Basis for tax calculations
+# "gross" = before fees, "net" = after payment processing fees
+fica_basis = "gross"
+income_tax_basis = "net"
 
 [options]
-# Automatically create tax withholding transactions
+# Automatically create tax withholding transactions with each charge
 auto_withhold = true
 
-# Split FICA into employee/employer portions (recommended for S-corp readiness)
+# Split FICA into employee/employer portions
+# Recommended: keeps books S-corp ready from day one
 split_fica = true
 
 # Round all monetary amounts to 2 decimal places
 round_to_cents = true
+
+
