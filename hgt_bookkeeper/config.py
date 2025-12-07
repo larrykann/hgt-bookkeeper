@@ -15,52 +15,39 @@ class ConfigError(Exception):
 
     pass
 
-
-@dataclass
-class WithholdingAccounts:
-    """Asset sub-accounts under checking for tax withholding reserves."""
-
-    fica_employee: str
-    fica_employer: str
-    federal: str
-    state: str
-    operating: str
-
-
-@dataclass
-class TaxLiabilityAccounts:
-    """Liability accounts for accrued taxes owed."""
-
-    fica_employee: str
-    fica_employer: str
-    federal: str
-    state: str
-
-
-@dataclass
-class TaxExpenseAccounts:
-    """Expense accounts for tax accrual."""
-
-    fica_employee: str
-    fica_employer: str
-    federal: str
-    state: str
-
-
 @dataclass
 class Accounts:
     """All account mappings for GnuCash transactions."""
 
-    subscription_income: str
-    invoice_income: str
     checking: str
+    operating: str
+    
+    # Asset accounts for withholding
+    withholding_fica_employee: str
+    withholding_fica_employer: str
+    withholding_federal: str
+    withholding_state: str
+
+    # Stripe Expenses
     stripe_balance: str
     transaction_fees: str
     billing_fees: str
-    withholding: WithholdingAccounts
-    tax_liability: TaxLiabilityAccounts
-    tax_expense: TaxExpenseAccounts
 
+    # Stripe Income
+    subscription_income: str
+    invoice_income: str
+
+    # Tax Liability Accounts
+    tax_liability_fica_employee: str
+    tax_liability_fica_employer: str
+    tax_liability_federal: str
+    tax_liability_state: str
+
+    # Tax Exepense Accounts
+    tax_expense_fica_employee: str
+    tax_expense_fica_employer: str
+    tax_expense_federal: str
+    tax_expense_state: str
 
 @dataclass
 class TaxRates:
@@ -188,7 +175,7 @@ def find_config_file(start_path: Optional[Path] = None) -> Path:
     )
 
 
-def load_config(config_path: Optional[Path] = None) -> Config:
+def load_config(config_path: Optional[Path] = None, exporter: Str = "gnucash") -> Config:
     """
     Load and parse configuration from TOML file.
 
@@ -214,33 +201,27 @@ def load_config(config_path: Optional[Path] = None) -> Config:
 
     try:
         # Parse accounts section
-        acct = raw["accounts"]
+        acct = raw["accounts"][exporter]
         accounts = Accounts(
-            income=acct["subscription_income"],
-            research_income=acct["invoice_income"],
             checking=acct["checking"],
+            operating=acct["withholding"]["operating"],
+            withholding_fica_employee=acct["withholding"]["fica_employee"],
+            withholding_fica_employer=acct["withholding"]["fica_employer"],
+            withholding_federal=acct["withholding"]["federal"],
+            withholding_ state=acct["withholding"]["state"],
             stripe_balance=acct["stripe_balance"],
             transaction_fees=acct["transaction_fees"],
             billing_fees=acct["billing_fees"],
-            withholding=WithholdingAccounts(
-                fica_employee=acct["withholding"]["fica_employee"],
-                fica_employer=acct["withholding"]["fica_employer"],
-                federal=acct["withholding"]["federal"],
-                state=acct["withholding"]["state"],
-                operating=acct["withholding"]["operating"],
-            ),
-            tax_liability=TaxLiabilityAccounts(
-                fica_employee=acct["tax_liability"]["fica_employee"],
-                fica_employer=acct["tax_liability"]["fica_employer"],
-                federal=acct["tax_liability"]["federal"],
-                state=acct["tax_liability"]["state"],
-            ),
-            tax_expense=TaxExpenseAccounts(
-                fica_employee=acct["tax_expense"]["fica_employee"],
-                fica_employer=acct["tax_expense"]["fica_employer"],
-                federal=acct["tax_expense"]["federal"],
-                state=acct["tax_expense"]["state"],
-            ),
+            subscription_income=acct["subscription_income"],
+            invoice_income=acct["invoice_income"],
+            tax_liability_fica_employee=acct["tax_liability"]["fica_employee"],
+            tax_liability_fica_employer=acct["tax_liability"]["fica_employer"],
+            tax_liability_federal=acct["tax_liability"]["federal"],
+            tax_liability_state=acct["tax_liability"]["state"],
+            tax_expense_fica_employee=acct["tax_expense"]["fica_employee"],
+            tax_expense_fica_employer=acct["tax_expense"]["fica_employer"],
+            tax_expense_federal=acct["tax_expense"]["federal"],
+           tax_expense_state=acct["tax_expense"]["state"],
         )
 
         # Parse tax rates
