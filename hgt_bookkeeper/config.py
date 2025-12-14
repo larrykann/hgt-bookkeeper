@@ -19,9 +19,11 @@ class ConfigError(Exception):
 class Accounts:
     """All account mappings for GnuCash transactions."""
 
+    # Core accounts
     checking: str
     operating: str
-    
+    stripe_balance: str
+
     # Asset accounts for withholding
     withholding_fica_employee: str
     withholding_fica_employer: str
@@ -29,7 +31,6 @@ class Accounts:
     withholding_state: str
 
     # Stripe Expenses
-    stripe_balance: str
     transaction_fees: str
     billing_fees: str
 
