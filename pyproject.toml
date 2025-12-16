@@ -42,7 +42,7 @@ dev = [
 ]
 
 [project.scripts]
-hgt-bookkeeper = "hgt_bookkeeper.cli:main"
+book = "hgt_bookkeeper.cli:main"
 
 [project.urls]
 "Homepage" = "https://github.com/larrykann/hgt-bookkeeper"
