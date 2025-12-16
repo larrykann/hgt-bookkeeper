@@ -7,10 +7,16 @@ Source-agnostic design supports multiple importers and exporters.
 
 import sqlite3
 from pathlib import Path
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional
 from dataclasses import dataclass
 
+# EPOCH date helpers
+def to_epoch(dt: datetime) -> int: return int(dt.timestamp())
+
+def from_epoch(epoch: int) -> datetime.datetime: return datetime.fromtimestamp(epoch, tz=timezone.utc)
+
+def now_epoch() -> int: return to_epoch(datetime.now(timezone.utc))
 
 # Canonical transaction types (normalized across all sources)
 TRANSACTION_TYPES = {
@@ -36,7 +42,7 @@ CREATE TABLE IF NOT EXISTS transactions (
     source_id TEXT NOT NULL,                -- Original ID from source (txn_abc123)
     source_type TEXT,                       -- Raw type from source ('charge', 'stripe_fee', etc.)
     
-    date TEXT NOT NULL,                     -- Transaction date (ISO 8601)
+    date INTEGER NOT NULL,                     -- Transaction date (ISO 8601)
     type TEXT NOT NULL,                     -- Canonical type: revenue, platform_fee, payout, refund, adjustment
     income_category TEXT,                   -- For revenue: subscription, invoice, other (NULL for non-revenue)
     description TEXT,                       -- Raw description from source
@@ -46,12 +52,12 @@ CREATE TABLE IF NOT EXISTS transactions (
     net REAL NOT NULL,                      -- Net amount (positive = money in, negative = money out)
     currency TEXT NOT NULL DEFAULT 'usd',   -- ISO currency code
     
-    available_on TEXT,                      -- When funds become available (for payout matching)
+    available_on INTEGER,                      -- When funds become available (for payout matching)
     payout_id TEXT,                         -- Links revenue to its payout (NULL until paid out)
     
-    created_at TEXT NOT NULL,               -- When we imported this record
+    created_at INTEGER NOT NULL,               -- When we imported this record
     metadata TEXT,                          -- JSON blob for source-specific extras
-    exported_gnucash TEXT,                  -- Timestamp when exported to GnuCash (NULL = not exported)
+    exported_gnucash INTEGER,                  -- Timestamp when exported to GnuCash (NULL = not exported)
     
     UNIQUE(source, source_id)               -- Prevent duplicate imports
 );
@@ -64,7 +70,7 @@ CREATE TABLE IF NOT EXISTS tax_calculations (
     federal REAL NOT NULL,
     state REAL NOT NULL,
     total REAL NOT NULL,
-    calculated_at TEXT NOT NULL,
+    calculated_at INTEGER NOT NULL,
     
     FOREIGN KEY (transaction_id) REFERENCES transactions(id)
 );
@@ -84,10 +90,10 @@ CREATE TABLE IF NOT EXISTS payout_links (
 CREATE TABLE IF NOT EXISTS export_log (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     exporter TEXT NOT NULL,                 -- 'gnucash', 'beancount', etc.
-    start_date TEXT NOT NULL,
-    end_date TEXT NOT NULL,
+    start_date INTEGER NOT NULL,
+    end_date INTEGER NOT NULL,
     transaction_count INTEGER NOT NULL,
-    exported_at TEXT NOT NULL,
+    exported_at INTEGER NOT NULL,
     output_file TEXT                        -- Path to generated file
 );
 
@@ -108,7 +114,7 @@ class Transaction:
     source: str
     source_id: str
     source_type: Optional[str]
-    date: str
+    date: int
     type: str
     income_category: Optional[str]
     description: Optional[str]
@@ -116,11 +122,11 @@ class Transaction:
     fees: Optional[float]
     net: float
     currency: str
-    available_on: Optional[str]
+    available_on: Optional[int]
     payout_id: Optional[str]
-    created_at: str
+    created_at: int
     metadata: Optional[str]
-    exported_gnucash: Optional[str] = None
+    exported_gnucash: Optional[int] = None
 
 
 @dataclass
@@ -133,7 +139,7 @@ class TaxCalculation:
     federal: float
     state: float
     total: float
-    calculated_at: str
+    calculated_at: int
 
 
 class Database:
@@ -328,7 +334,7 @@ class Database:
 
         conn = self.connect()
         column = f"exported_{exporter}"
-        timestamp = datetime.now().isoformat()
+        timestamp = now_epoch()
 
         placeholders = ",".join("?" * len(transaction_ids))
         query = f"UPDATE transactions SET {
@@ -426,7 +432,7 @@ class Database:
                 start_date,
                 end_date,
                 transaction_count,
-                datetime.now().isoformat(),
+                now_epoch(),
                 output_file,
             ),
         )
