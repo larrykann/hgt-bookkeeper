@@ -330,7 +330,7 @@ class Database:
     ) -> int:
         """Mark transactions as exported. Returns count updated."""
         if not transaction_ids:
-        return 0
+            return 0
 
         conn = self.connect()
         column = f"exported_{exporter}"
