@@ -88,7 +88,7 @@ def parse_amount(value) -> float:
     return float(cleaned)
 
 
-def parse_date(value) -> Optional[str]:
+def parse_date(value) -> Optional[int]:
     """Parse date to YYYY-MM-DD format."""
     if not value:
         return None
