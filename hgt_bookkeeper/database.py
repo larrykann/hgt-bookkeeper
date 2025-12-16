@@ -489,7 +489,7 @@ def get_database(year: int, base_path: Optional[Path] = None) -> Database:
     if base_path is None:
         base_path = Path("processed")
 
-    db_path = base_path / f"{year}.db"
+    db_path = base_path / "bookkeeper.db"
     db = Database(db_path)
     db.initialize()
     return db
