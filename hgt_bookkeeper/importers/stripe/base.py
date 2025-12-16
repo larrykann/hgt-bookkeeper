@@ -14,7 +14,7 @@ import uuid
 from datetime import datetime
 from typing import Optional
 
-from hgt_bookkeeper.database import Database, Transaction, TaxCalculation
+from hgt_bookkeeper.database import Database, Transaction, TaxCalculation, now_epoch, to_epoch
 from hgt_bookkeeper.config import Config
 
 
@@ -93,10 +93,16 @@ def parse_date(value) -> Optional[str]:
     if not value:
         return None
     cleaned = str(value).strip().strip('"')
-    if " " in cleaned:
-        return cleaned.split(" ")[0]
-    return cleaned
 
+    # Handle "YYYY-MM-DD HH:MM:SS" format from Stripe
+    if " " in cleaned:
+        date_part = cleaned.split(" ")[0]
+    else:
+        date_part = cleaned
+
+    # Parse YYYY-MM-DD to datetime, then to epoch
+    dt = datetime.strptime(date_part, "%Y-%m-%d")
+    return to_epoch(dt)
 
 def create_transaction(
     source_id: str,
@@ -150,7 +156,7 @@ def create_transaction(
         currency=currency.lower(),
         available_on=available_date,
         payout_id=payout_id,
-        created_at=datetime.now().isoformat(),
+        created_at=now_epoch(),
         metadata=None,
     )
 
@@ -169,7 +175,7 @@ def calculate_taxes(txn: Transaction, config: Config) -> Optional[TaxCalculation
         federal=taxes["federal"],
         state=taxes["state"],
         total=sum(taxes.values()),
-        calculated_at=datetime.now().isoformat(),
+        calculated_at=now_epoch(),
     )
 
 
