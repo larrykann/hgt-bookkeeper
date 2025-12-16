@@ -16,7 +16,7 @@ from pathlib import Path
 from typing import Optional
 
 from hgt_bookkeeper.config import Config
-from hgt_bookkeeper.database import Database, Transaction, TaxCalculation
+from hgt_bookkeeper.database import Database, Transaction, TaxCalculation, from_epoch
 
 
 @dataclass
@@ -262,7 +262,7 @@ class GnuCashExporter:
         ))
         
         return JournalEntry(
-            date=txn.date,
+            date=from_epoch(txn.date).strftime("%Y-%m-%d"),
             description=f"{txn.income_category.title()}: {txn.description or 'Revenue'}",
             splits=splits,
         )
@@ -277,7 +277,7 @@ class GnuCashExporter:
         amount = abs(txn.net)
         
         return JournalEntry(
-            date=txn.date,
+            date=from_epoch(txn.date).strftime("%Y-%m-%d"),
             description="Stripe Payout",
             splits=[
                 Split(
@@ -302,7 +302,7 @@ class GnuCashExporter:
         amount = abs(txn.net)
         
         return JournalEntry(
-            date=txn.date,
+            date=from_epoch(txn.date).strftime("%Y-%m-%d"),
             description=txn.description or "Stripe Billing Fee",
             splits=[
                 Split(
