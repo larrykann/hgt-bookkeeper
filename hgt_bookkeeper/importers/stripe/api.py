@@ -41,4 +41,4 @@ def import_api(db: Database, config: Config, api_key: str, limit: int = 100) -> 
     #    - available_date = datetime.fromtimestamp(txn["available_on"]).strftime("%Y-%m-%d")
     #    - payout_id = txn.get("source") if type is payout else None
     
-    raise NotImplementedError("API import not yet implemented. Use CSV export.") api specific import
+    raise NotImplementedError("API import not yet implemented. Use CSV export.") # api specific import
