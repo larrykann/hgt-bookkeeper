@@ -29,10 +29,9 @@ wheels/
 # Sensitive configuration
 config.toml
 
-# Raw data files (your Stripe exports)
-raw/*.csv
-raw/*.xlsx
-raw/*.xls
+# Raw directory, ignore sub-directories
+raw/*
+!raw/.gitkeep
 
 # Processed outputs (your generated GnuCash files)
 processed/*.csv
