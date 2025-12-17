@@ -14,7 +14,7 @@ from dataclasses import dataclass
 # EPOCH date helpers
 def to_epoch(dt: datetime) -> int: return int(dt.timestamp())
 
-def from_epoch(epoch: int) -> datetime.datetime: return datetime.fromtimestamp(epoch, tz=timezone.utc)
+def from_epoch(epoch: int) -> datetime: return datetime.fromtimestamp(epoch, tz=timezone.utc)
 
 def now_epoch() -> int: return to_epoch(datetime.now(timezone.utc))
 
@@ -481,7 +481,7 @@ class Database:
         }
 
 
-def get_database(year: int, base_path: Optional[Path] = None) -> Database:
+def get_database(base_path: Optional[Path] = None) -> Database:
     """
     Get database instance for a specific year.
 
