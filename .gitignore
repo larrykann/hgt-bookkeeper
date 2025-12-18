@@ -34,7 +34,8 @@ raw/*
 !raw/.gitkeep
 
 # Processed outputs (your generated GnuCash files)
-processed/*.csv
+processed/*
+!processed/.gitkeep
 
 # Keep the .gitkeep files
 !raw/.gitkeep
