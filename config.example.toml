@@ -42,9 +42,9 @@ tax_liability_state = "Liabilities:Taxes Payable:State Income Tax"
 
 # Expense accounts for tax accrual
 tax_expense_fica_employee = "Expenses:Taxes:FICA Employee Share"
-tax_liability_fica_employer = "Expenses:Taxes:FICA Employer Share"
-tax_liability_federal = "Expenses:Taxes:Federal Income Tax"
-tax_liability_state = "Expenses:Taxes:State Income Tax"
+tax_expense_fica_employer = "Expenses:Taxes:FICA Employer Share"
+tax_expense_federal = "Expenses:Taxes:Federal Income Tax"
+tax_expense_state = "Expenses:Taxes:State Income Tax"
 
 [tax_rates]
 # Tax withholding rates - adjust based on your tax situation
