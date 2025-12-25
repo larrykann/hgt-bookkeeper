@@ -323,6 +323,55 @@ class Database:
         cursor = conn.execute(query, params)
         return [Transaction(**dict(row)) for row in cursor.fetchall()]
 
+    def link_revenue_to_payouts(self) -> dict:
+        """
+        Link revenue transactions to payouts by matching available_on dates.
+    
+        Returns:
+            dict with linking statistics
+        """
+        conn = self.connect()
+    
+        # Get all payouts
+        cursor = conn.execute("""
+            SELECT id, available_on FROM transactions WHERE type = 'payout'
+        """)
+        payouts = cursor.fetchall()
+    
+        linked = 0
+        for payout in payouts:
+            payout_id = payout['id']
+            available_on = payout['available_on']
+        
+            if available_on is None:
+                continue
+        
+            # Link all revenue with matching available_on that aren't already linked
+            cursor = conn.execute("""
+                UPDATE transactions 
+                SET payout_id = ?
+                WHERE type = 'revenue' 
+                AND available_on = ?
+                AND payout_id IS NULL
+            """, (payout_id, available_on))
+        
+            linked += cursor.rowcount
+    
+        conn.commit()
+    
+        # Check for orphaned revenue (no matching payout)
+        cursor = conn.execute("""
+            SELECT date, gross, available_on FROM transactions
+            WHERE type = 'revenue' AND payout_id IS NULL
+            ORDER BY available_on ASC
+        """)
+        orphans = [dict(row) for row in cursor.fetchall()]
+    
+        return {
+            "linked": linked,
+            "orphans": orphans,
+        }
+
     def mark_exported(
         self,
         transaction_ids: list[str],

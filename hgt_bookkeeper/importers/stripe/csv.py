@@ -52,7 +52,7 @@ def import_csv(db: Database, config: Config, csv_path: Path) -> dict:
                     currency=row["Currency"].strip(),
                     created_date=parse_date(row["Created (UTC)"]),
                     available_date=parse_date(row.get("Available On (UTC)", "")),
-                    payout_id=row.get("Transfer", "").strip() or None,
+                    payout_id=None,
                 )
                 
                 if success:
