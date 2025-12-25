@@ -144,6 +144,7 @@ def cmd_import(args):
     console.print(f"  Imported: [cyan]{result['imported']}[/cyan]")
     console.print(f"  Skipped (duplicates): [yellow]{result['skipped']}[/yellow]")
     console.print(f"  Errors: [red]{result['errors']}[/red]")
+    console.print(f"  Linked to payouts: [cyan]{result['linked']}[/cyan]")
     
     # Show date range if we imported anything
     if result['imported'] > 0:
@@ -153,6 +154,20 @@ def cmd_import(args):
             end_date = from_epoch(summary['date_range'][1]).strftime("%Y-%m-%d")
             console.print(f"  Date range: [cyan]{start_date}[/cyan] to [cyan]{end_date}[/cyan]")
     
+    # Warn about orphaned revenue
+    if result['orphans']:
+        console.print()
+        console.print(f"[yellow]Warning:[/yellow] {len(result['orphans'])} revenue transactions have no matching payout")
+        console.print("[yellow]These may need a future import to link:[/yellow]")
+        console.print()
+        console.print(f"  {'Date':<12} {'Amount':>10} {'Available On':<12}")
+        console.print(f"  {'-'*12} {'-'*10} {'-'*12}")
+        for orphan in result['orphans'][:10]:  # Show first 10
+            date = from_epoch(orphan['date']).strftime("%Y-%m-%d")
+            available = from_epoch(orphan['available_on']).strftime("%Y-%m-%d") if orphan['available_on'] else "N/A"
+            console.print(f"  {date:<12} ${orphan['gross']:>9.2f} {available:<12}")
+        if len(result['orphans']) > 10:
+            console.print(f"  ... and {len(result['orphans']) - 10} more")
     db.close()
 
 def cmd_export(args):

@@ -63,9 +63,14 @@ def import_csv(db: Database, config: Config, csv_path: Path) -> dict:
             except Exception as e:
                 errors += 1
                 continue
+
+    # Pass 2: Link revenue to payouts by available_on date
+    link_result = db.link_revenue_to_payouts()
     
     return {
         "imported": imported,
         "skipped": skipped,
         "errors": errors,
+        "linked": link_result["linked"],
+        "orphans": link_result["orphans"],
     }
