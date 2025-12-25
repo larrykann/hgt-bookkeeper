@@ -162,4 +162,41 @@ def cmd_export(args):
 
 def cmd_status(args):
     """Handle status command."""
-    console.print("[yellow]Status command not yet implemented[/yellow]")
+    from hgt_bookkeeper.database import get_database, from_epoch
+    from rich.table import Table
+    
+    db = get_database()
+    summary = db.get_summary()
+    
+    # Main statistics table
+    table = Table(title="Database Summary", show_header=True)
+    table.add_column("Metric", style="cyan")
+    table.add_column("Value", style="green")
+    
+    table.add_row("Total Transactions", str(summary['total_transactions']))
+    table.add_row("Revenue Transactions", str(summary['revenue_transactions']))
+    table.add_row("Payout Transactions", str(summary['payout_transactions']))
+    table.add_row("Pending Revenue (not paid out)", str(summary['pending_revenue']))
+    
+    if summary['date_range'][0]:
+        start = from_epoch(summary['date_range'][0]).strftime("%Y-%m-%d")
+        end = from_epoch(summary['date_range'][1]).strftime("%Y-%m-%d")
+        table.add_row("Date Range", f"{start} to {end}")
+    
+    table.add_row("Total Gross Revenue", f"${summary['total_gross']:.2f}")
+    table.add_row("Total Fees", f"${summary['total_fees']:.2f}")
+    table.add_row("Total Net Revenue", f"${summary['total_net']:.2f}")
+    
+    console.print(table)
+    
+    # Export status
+    console.print()
+    console.print("[blue]Export Status:[/blue]")
+    
+    unexported = len(db.get_unexported_transactions())
+    if unexported > 0:
+        console.print(f"  [yellow]{unexported}[/yellow] transactions not yet exported")
+    else:
+        console.print(f"  [green]All transactions exported[/green]")
+    
+    db.close()
