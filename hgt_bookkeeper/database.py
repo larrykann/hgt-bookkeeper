@@ -75,17 +75,6 @@ CREATE TABLE IF NOT EXISTS tax_calculations (
     FOREIGN KEY (transaction_id) REFERENCES transactions(id)
 );
 
--- Payout linkages (which transactions were included in which payout)
-CREATE TABLE IF NOT EXISTS payout_links (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    payout_id TEXT NOT NULL,                -- References transactions.id where type='payout'
-    transaction_id TEXT NOT NULL,           -- References transactions.id (revenue being paid out)
-    
-    FOREIGN KEY (payout_id) REFERENCES transactions(id),
-    FOREIGN KEY (transaction_id) REFERENCES transactions(id),
-    UNIQUE(payout_id, transaction_id)
-);
-
 -- Processing state (tracks what's been exported)
 CREATE TABLE IF NOT EXISTS export_log (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -277,22 +266,6 @@ class Database:
         """)
         return [Transaction(**dict(row)) for row in cursor.fetchall()]
 
-    def link_revenue_to_payout(self, transaction_id: str, payout_id: str):
-        """Mark a revenue transaction as paid out."""
-        conn = self.connect()
-        conn.execute(
-            "UPDATE transactions SET payout_id = ? WHERE id = ?", (
-                payout_id, transaction_id)
-        )
-        conn.execute(
-            """
-            INSERT OR IGNORE INTO payout_links (payout_id, transaction_id)
-            VALUES (?, ?)
-        """,
-            (payout_id, transaction_id),
-        )
-        conn.commit()
-
     def get_unexported_transactions(
         self,
         exporter: str = "gnucash",
@@ -443,8 +416,8 @@ class Database:
                 SUM(tc.state) as state,
                 SUM(tc.total) as total
             FROM tax_calculations tc
-            JOIN payout_links pl ON tc.transaction_id = pl.transaction_id
-            WHERE pl.payout_id = ?
+            JOIN transactions t ON tc.transaction_id = t.id
+            WHERE t.payout_id = ?
         """,
             (payout_id,),
         )
