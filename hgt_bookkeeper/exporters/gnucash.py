@@ -335,25 +335,27 @@ class GnuCashExporter:
                 "Date",
                 "Description",
                 "Account",
-                "Deposit",
-                "Withdrawal",
-                "Memo",
+                "Amount",
+                "Notes",
             ])
             
             for entry in entries:
+                first_split = True
                 for split in entry.splits:
-                    if split.amount >= 0:
-                        deposit = ""
-                        withdrawal = f"{split.amount:.2f}"
+                    if first_split: 
+                        writer.writerow([
+                            entry.date,
+                            entry.description,
+                            split.account,
+                            f"{split.amount:.2f}",
+                            split.memo,
+                        ])
+                        first_split = False
                     else:
-                        deposit = f"{abs(split.amount):.2f}"
-                        withdrawal = ""
-                    
-                    writer.writerow([
-                        entry.date,
-                        entry.description,
-                        split.account,
-                        deposit,
-                        withdrawal,
-                        split.memo,
-                    ])
+                        writer.writerow([
+                            "",
+                            "",
+                            split.account,
+                            f"{split.amount:.2f}",
+                            split.memo,
+                        ])
