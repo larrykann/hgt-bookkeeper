@@ -215,7 +215,7 @@ class GnuCashExporter:
         
         return JournalEntry(
             date=from_epoch(txn.date).strftime("%Y-%m-%d"),
-            description=f"{txn.income_category.title() if txn.income_category else 'Revenue'}: {txn.description or 'Revenue'}",
+            description=f"{txn.income_category.title() if txn.income_category else 'Revenue'}: {txn.description or 'Revenue'} [{txn.id}]",
             splits=splits,
         )
     
@@ -230,7 +230,7 @@ class GnuCashExporter:
         
         return JournalEntry(
             date=from_epoch(txn.date).strftime("%Y-%m-%d"),
-            description=txn.description or "Stripe Billing Fee",
+            description=f"{txn.description or 'Stripe Billing Fee'} [{txn.id}]",
             splits=[
                 Split(
                     account=self.accounts.stripe_balance,
@@ -305,7 +305,7 @@ class GnuCashExporter:
         
         return JournalEntry(
             date=from_epoch(txn.date).strftime("%Y-%m-%d"),
-            description="Stripe Payout",
+            description=f"Stripe Payout [{txn.id}]",
             splits=splits,
         )
     
