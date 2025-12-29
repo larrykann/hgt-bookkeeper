@@ -172,8 +172,116 @@ def cmd_import(args):
 
 def cmd_export(args):
     """Handle export command."""
-    console.print("[yellow]Export command not yet implemented[/yellow]")
-
+    from hgt_bookkeeper.config import load_config, ConfigError
+    from hgt_bookkeeper.database import get_database, from_epoch, to_epoch
+    from hgt_bookkeeper.exporters.gnucash import GnuCashExporter
+    from datetime import datetime
+    from pathlib import Path
+    
+    # Load config and database
+    try:
+        config = load_config()
+    except ConfigError as e:
+        console.print(f"[red]Configuration Error:[/red] {e}")
+        sys.exit(1)
+    
+    db = get_database()
+    
+    # Parse date arguments
+    start_date = None
+    end_date = None
+    
+    if args.start:
+        try:
+            dt = datetime.strptime(args.start, "%Y-%m-%d")
+            start_date = to_epoch(dt)
+        except ValueError:
+            console.print(f"[red]Error:[/red] Invalid start date format. Use YYYY-MM-DD")
+            sys.exit(1)
+    
+    if args.end:
+        if not args.start:
+            console.print(f"[red]Error:[/red] --end requires --start")
+            sys.exit(1)
+        try:
+            dt = datetime.strptime(args.end, "%Y-%m-%d")
+            end_date = to_epoch(dt)
+        except ValueError:
+            console.print(f"[red]Error:[/red] Invalid end date format. Use YYYY-MM-DD")
+            sys.exit(1)
+    
+    # Determine export mode
+    if args.start:
+        mode = "date range"
+        # For date range mode, we export regardless of export flag
+        # Get all transactions in range, not just unexported
+        transactions = db.get_transactions_by_date_range(start_date, end_date or to_epoch(datetime.now()))
+        if not transactions:
+            console.print(f"[yellow]No transactions found in date range[/yellow]")
+            db.close()
+            sys.exit(0)
+        
+        # Get actual date range from transactions
+        actual_start = min(t.date for t in transactions)
+        actual_end = max(t.date for t in transactions)
+    else:
+        mode = "new only"
+        # Check for unexported transactions
+        transactions = db.get_unexported_transactions()
+        if not transactions:
+            console.print(f"[green]No new transactions to export[/green]")
+            db.close()
+            sys.exit(0)
+        
+        actual_start = min(t.date for t in transactions)
+        actual_end = max(t.date for t in transactions)
+    
+    # Determine output path
+    if args.output:
+        output_path = Path(args.output)
+    else:
+        start_str = from_epoch(actual_start).strftime("%Y-%m-%d")
+        end_str = from_epoch(actual_end).strftime("%Y-%m-%d")
+        output_dir = Path("processed/gnucash")
+        output_path = output_dir / f"stripe_gnucash_{start_str}_{end_str}.csv"
+    
+    # Create exporter and export
+    console.print(f"[blue]Exporting ({mode}):[/blue] {len(transactions)} transactions")
+    
+    exporter = GnuCashExporter(db, config)
+    
+    if args.start:
+        # Date range mode - export all in range, mark as exported
+        result = exporter.export_all(
+            output_path=output_path,
+            start_date=start_date,
+            end_date=end_date,
+            mark_exported=True,
+        )
+    else:
+        # New only mode
+        result = exporter.export_all(
+            output_path=output_path,
+            mark_exported=True,
+        )
+    
+    # Print summary
+    console.print()
+    console.print("[green]Export Complete[/green]")
+    console.print(f"  Total exported: [cyan]{result['total']}[/cyan]")
+    console.print(f"    Revenue: [cyan]{result['revenue']}[/cyan]")
+    console.print(f"    Platform fees: [cyan]{result['platform_fee']}[/cyan]")
+    console.print(f"    Payouts: [cyan]{result['payout']}[/cyan]")
+    if result['skipped'] > 0:
+        console.print(f"  Skipped (unbalanced): [yellow]{result['skipped']}[/yellow]")
+    console.print(f"  Output file: [cyan]{result['file']}[/cyan]")
+    
+    # Show date range
+    start_str = from_epoch(actual_start).strftime("%Y-%m-%d")
+    end_str = from_epoch(actual_end).strftime("%Y-%m-%d")
+    console.print(f"  Date range: [cyan]{start_str}[/cyan] to [cyan]{end_str}[/cyan]")
+    
+    db.close()
 
 def cmd_status(args):
     """Handle status command."""
