@@ -3,79 +3,57 @@
 #
 # Accounting Flow:
 # 1. On charge: Record revenue (gross), fees (expense), net to Stripe Balance
-# 2. On charge: Accrue tax liability (expense + liability accounts)
-# 3. On stripe_fee: Reduce Stripe Balance, record billing expense
-# 4. On payout: Move from Stripe Balance to Checking sub-accounts
-#    - Withholding sub-accounts get tax amounts (mirrors liabilities)
-#    - Available for Draw gets the remainder
-# 5. Liabilities remain until you manually pay quarterly taxes
+# 2. On stripe_fee: Reduce Stripe Balance, record billing expense
+# 3. On payout: Move from Stripe Balance to Checking:Operating
+# 4. Run `book tax` monthly/quarterly to:
+#    - Calculate tax liability on net profit
+#    - Move cash from Operating to withholding sub-accounts
+#    - Create liability entries balanced by equity reserve
+# 5. Owner's draw taken manually from Operating
+# 6. Quarterly tax payments clear liabilities from withholding accounts
 #
-# Export Options:
-# - GnuCash
+# Export Format: GnuCash
 
 [accounts.gnucash]
-# Revenue account - where subscription income is recorded (gross amount)
-subscription_income = "Income:Business:Substack Revenue:Subscription_Income"
-invoice_income = "Income:Business:Substack Revenue:Invoice Income"
-
+# Income accounts
+subscription_income = "Income:Business:Subscription Revenue"
+invoice_income = "Income:Business:Invoice Revenue"
 
 # Asset accounts
 checking = "Assets:Current Assets:Checking Account"
 stripe_balance = "Assets:Current Assets:Stripe Balance"
+operating = "Assets:Current Assets:Checking Account:Operating"
+withholding_fica = "Assets:Current Assets:Checking Account:Withholding:FICA"
+withholding_federal = "Assets:Current Assets:Checking Account:Withholding:Federal"
+withholding_state = "Assets:Current Assets:Checking Account:Withholding:State"
 
-# Expense accounts for payment processing fees
-payment_fees = "Expenses:Business:Payment Processing Fees"
-stripe_billing = "Expenses:Business:Stripe Billing Fees"
+# Expense accounts
+transaction_fees = "Expenses:Payment Processing Fees:Transaction Fees"
+billing_fees = "Expenses:Payment Processing Fees:Billing Fees"
 
-# Sub-accounts under checking for tax withholding reserves
-withholding_fica_employee = "Assets:Current Assets:Checking Account:Withheld:FICA Employee"
-withholding_fica_employer = "Assets:Current Assets:Checking Account:Withheld:FICA Employer"
-withholding_federal = "Assets:Current Assets:Checking Account:Withheld:Federal"
-withholding_state = "Assets:Current Assets:Checking Account:Withheld:State"
-available = "Assets:Current Assets:Checking Account:Available for Draw"
-
-# Liability accounts for accrued taxes
-tax_liability_fica_employee = "Liabilities:Taxes Payable:FICA Employee"
-tax_liability_fica_employer = "Liabilities:Taxes Payable:FICA Employer"
+# Liability accounts
+tax_liability_fica = "Liabilities:Taxes Payable:FICA"
 tax_liability_federal = "Liabilities:Taxes Payable:Federal Income Tax"
 tax_liability_state = "Liabilities:Taxes Payable:State Income Tax"
 
-# Expense accounts for tax accrual
-tax_expense_fica_employee = "Expenses:Taxes:FICA Employee Share"
-tax_expense_fica_employer = "Expenses:Taxes:FICA Employer Share"
-tax_expense_federal = "Expenses:Taxes:Federal Income Tax"
-tax_expense_state = "Expenses:Taxes:State Income Tax"
+# Equity accounts
+owner_draw = "Equity:Owner Draw"
+owner_tax_reserve = "Equity:Owner Tax Reserve"
 
 [tax_rates]
-# Tax withholding rates - adjust based on your tax situation
-#
 # FICA (Self-Employment Tax):
-# - Calculated on GROSS revenue (before fees)
-# - Split into employee (7.65%) and employer (7.65%) = 15.3% total
-fica_employee = 0.0765
-fica_employer = 0.0765
+# - 15.3% total (12.4% Social Security + 2.9% Medicare)
+# - Applied to 92.35% of net profit
+fica = 0.153
+fica_taxable_percent = 0.9235
 
 # Income Tax:
-# - Calculated on NET revenue (after payment processing fees)
 # - Adjust rates to match your tax bracket
-federal_income = 0.15
+# - Applied to net profit minus (FICA * 50%) deduction
+federal_income = 0.12
 state_income = 0.0575
 
-[tax_calculation]
-# Basis for tax calculations
-# "gross" = before fees, "net" = after payment processing fees
-fica_basis = "gross"
-income_tax_basis = "net"
-
 [options]
-# Automatically create tax withholding transactions with each charge
-auto_withhold = true
-
-# Split FICA into employee/employer portions
-# Recommended: keeps books S-corp ready from day one
-split_fica = true
-
 # Round all monetary amounts to 2 decimal places
 round_to_cents = true
-
 
